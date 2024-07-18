@@ -14,9 +14,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	ptypes "github.com/traefik/paerser/types"
-	"github.com/traefik/traefik/v2/pkg/config/static"
-	tcprouter "github.com/traefik/traefik/v2/pkg/server/router/tcp"
-	"github.com/traefik/traefik/v2/pkg/tcp"
+	"github.com/traefik/traefik/v3/pkg/config/static"
+	tcprouter "github.com/traefik/traefik/v3/pkg/server/router/tcp"
+	"github.com/traefik/traefik/v3/pkg/tcp"
 )
 
 func TestShutdownHijacked(t *testing.T) {
@@ -47,7 +47,7 @@ func TestShutdownTCP(t *testing.T) {
 	router, err := tcprouter.NewRouter()
 	require.NoError(t, err)
 
-	err = router.AddRoute("HostSNI(`*`)", 0, tcp.HandlerFunc(func(conn tcp.WriteCloser) {
+	err = router.AddTCPRoute("HostSNI(`*`)", 0, tcp.HandlerFunc(func(conn tcp.WriteCloser) {
 		_, err := http.ReadRequest(bufio.NewReader(conn))
 		if err != nil {
 			return
@@ -72,14 +72,14 @@ func testShutdown(t *testing.T, router *tcprouter.Router) {
 	epConfig.RespondingTimeouts.ReadTimeout = ptypes.Duration(5 * time.Second)
 	epConfig.RespondingTimeouts.WriteTimeout = ptypes.Duration(5 * time.Second)
 
-	entryPoint, err := NewTCPEntryPoint(context.Background(), &static.EntryPoint{
+	entryPoint, err := NewTCPEntryPoint(context.Background(), "", &static.EntryPoint{
 		// We explicitly use an IPV4 address because on Alpine, with an IPV6 address
 		// there seems to be shenanigans related to properly cleaning up file descriptors
 		Address:          "127.0.0.1:0",
 		Transport:        epConfig,
 		ForwardedHeaders: &static.ForwardedHeaders{},
 		HTTP2:            &static.HTTP2Config{},
-	}, nil)
+	}, nil, nil)
 	require.NoError(t, err)
 
 	conn, err := startEntrypoint(entryPoint, router)
@@ -159,12 +159,12 @@ func TestReadTimeoutWithoutFirstByte(t *testing.T) {
 	epConfig.SetDefaults()
 	epConfig.RespondingTimeouts.ReadTimeout = ptypes.Duration(2 * time.Second)
 
-	entryPoint, err := NewTCPEntryPoint(context.Background(), &static.EntryPoint{
+	entryPoint, err := NewTCPEntryPoint(context.Background(), "", &static.EntryPoint{
 		Address:          ":0",
 		Transport:        epConfig,
 		ForwardedHeaders: &static.ForwardedHeaders{},
 		HTTP2:            &static.HTTP2Config{},
-	}, nil)
+	}, nil, nil)
 	require.NoError(t, err)
 
 	router := &tcprouter.Router{}
@@ -196,12 +196,12 @@ func TestReadTimeoutWithFirstByte(t *testing.T) {
 	epConfig.SetDefaults()
 	epConfig.RespondingTimeouts.ReadTimeout = ptypes.Duration(2 * time.Second)
 
-	entryPoint, err := NewTCPEntryPoint(context.Background(), &static.EntryPoint{
+	entryPoint, err := NewTCPEntryPoint(context.Background(), "", &static.EntryPoint{
 		Address:          ":0",
 		Transport:        epConfig,
 		ForwardedHeaders: &static.ForwardedHeaders{},
 		HTTP2:            &static.HTTP2Config{},
-	}, nil)
+	}, nil, nil)
 	require.NoError(t, err)
 
 	router := &tcprouter.Router{}
@@ -236,12 +236,12 @@ func TestKeepAliveMaxRequests(t *testing.T) {
 	epConfig.SetDefaults()
 	epConfig.KeepAliveMaxRequests = 3
 
-	entryPoint, err := NewTCPEntryPoint(context.Background(), &static.EntryPoint{
+	entryPoint, err := NewTCPEntryPoint(context.Background(), "", &static.EntryPoint{
 		Address:          ":0",
 		Transport:        epConfig,
 		ForwardedHeaders: &static.ForwardedHeaders{},
 		HTTP2:            &static.HTTP2Config{},
-	}, nil)
+	}, nil, nil)
 	require.NoError(t, err)
 
 	router := &tcprouter.Router{}
@@ -282,12 +282,12 @@ func TestKeepAliveMaxTime(t *testing.T) {
 	epConfig.SetDefaults()
 	epConfig.KeepAliveMaxTime = ptypes.Duration(time.Millisecond)
 
-	entryPoint, err := NewTCPEntryPoint(context.Background(), &static.EntryPoint{
+	entryPoint, err := NewTCPEntryPoint(context.Background(), "", &static.EntryPoint{
 		Address:          ":0",
 		Transport:        epConfig,
 		ForwardedHeaders: &static.ForwardedHeaders{},
 		HTTP2:            &static.HTTP2Config{},
-	}, nil)
+	}, nil, nil)
 	require.NoError(t, err)
 
 	router := &tcprouter.Router{}
